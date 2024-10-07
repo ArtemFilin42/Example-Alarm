@@ -1,15 +1,15 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.UI;
 
 using TMPro;
+using DG.Tweening;
 
 using ExampleClock.Scripts.Services;
-using DG.Tweening;
 using ExampleClock.Scripts.Consts;
-using System.Text;
 
 namespace ExampleClock.Scripts.Widgets
 {
@@ -26,12 +26,17 @@ namespace ExampleClock.Scripts.Widgets
         //======Vars
         //====================================
 
+        [Header("Clock")]
         [SerializeField] private TMP_Dropdown      clockServerDropdown;
         [SerializeField] private List<ClockServer> clockServerList;
         [SerializeField] private GameObject        clockHoursArrow;
         [SerializeField] private GameObject        clockMinutesArrow;
         [SerializeField] private GameObject        clockSecondsArrow;
         [SerializeField] private TMP_Text          clockTimeLabel;
+        //
+        [Header("Alarm")]
+        [SerializeField] private TMP_InputField    alarmHoursField;
+        [SerializeField] private TMP_InputField    alarmMinutesField;
         //
         private ClockServer clockServer;
         private DateTime    clockTime;
@@ -60,6 +65,11 @@ namespace ExampleClock.Scripts.Widgets
                 clockTime = clockTime.AddSeconds(1);
                 UpdateTimeDisplay(true);
             }
+        }
+
+        private void OnDestroy()
+        {
+            DOTween.Clear();
         }
 
         //====================================
@@ -124,7 +134,15 @@ namespace ExampleClock.Scripts.Widgets
 
         private void LoadClockTime()
         {
+            //Load
             clockTime = NetworkTimeService.RequestTime(clockServer.Url);
+
+            //Offline
+            if(clockTime == default(DateTime))
+            {
+                clockTime = DateTime.Now;
+                clockServerDropdown.gameObject.SetActive(false);
+            }
         }
 
         //====================================
@@ -136,6 +154,5 @@ namespace ExampleClock.Scripts.Widgets
             LoadClockServer();
             LoadClockTime();
         }
-
     }
 }
