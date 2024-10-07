@@ -7,6 +7,9 @@ using UnityEngine.UI;
 using TMPro;
 
 using ExampleClock.Scripts.Services;
+using DG.Tweening;
+using ExampleClock.Scripts.Consts;
+using System.Text;
 
 namespace ExampleClock.Scripts.Widgets
 {
@@ -25,11 +28,16 @@ namespace ExampleClock.Scripts.Widgets
 
         [SerializeField] private TMP_Dropdown      clockServerDropdown;
         [SerializeField] private List<ClockServer> clockServerList;
-        [SerializeField] private GameObject        clockSecondsArrow;
-        [SerializeField] private GameObject        clockMinutesArrow;
         [SerializeField] private GameObject        clockHoursArrow;
+        [SerializeField] private GameObject        clockMinutesArrow;
+        [SerializeField] private GameObject        clockSecondsArrow;
+        [SerializeField] private TMP_Text          clockTimeLabel;
+        //
         private ClockServer clockServer;
         private DateTime    clockTime;
+        //
+        private float       clockLocalTimer  = 0f;
+        private float       clockLocalPeriod = 1f;
 
         //====================================
         //======MonoBehaviour
@@ -37,7 +45,21 @@ namespace ExampleClock.Scripts.Widgets
 
         private void Awake()
         {
-            LoadServerDropdown();
+            UpdateServerDropdown();
+            LoadClockServer();
+            LoadClockTime();
+            UpdateTimeDisplay(false);
+        }
+
+        private void FixedUpdate()
+        {
+            clockLocalTimer += Time.deltaTime;
+            if(clockLocalTimer >= clockLocalPeriod)
+            {
+                clockLocalTimer = 0f;
+                clockTime = clockTime.AddSeconds(1);
+                UpdateTimeDisplay(true);
+            }
         }
 
         //====================================
@@ -54,6 +76,40 @@ namespace ExampleClock.Scripts.Widgets
                 names.Add(server.Name);
             }
             clockServerDropdown.AddOptions(names);
+        }
+
+        private void UpdateTimeDisplay(bool animated)
+        {
+            //Time
+            int hours = clockTime.Hour;
+            float hoursRotation = -360/12 * (hours % 12);
+            int minutes = clockTime.Minute;
+            float minutesRotation = -360/60 * minutes;
+            int seconds = clockTime.Second;
+            float secondsRotation = -360/60 * seconds;
+
+            //Visual
+            if (animated)
+            {
+                clockHoursArrow.gameObject.transform.DORotate(new Vector3(0, 0, hoursRotation), ClockConsts.RotationDuration);
+                clockMinutesArrow.gameObject.transform.DORotate(new Vector3(0, 0, minutesRotation), ClockConsts.RotationDuration);
+                clockSecondsArrow.gameObject.transform.DORotate(new Vector3(0, 0, secondsRotation), ClockConsts.RotationDuration);
+            }
+            else
+            {
+                clockHoursArrow.gameObject.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, hoursRotation));
+                clockMinutesArrow.gameObject.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, minutesRotation));
+                clockSecondsArrow.gameObject.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, secondsRotation));
+            }
+
+            //Label
+            StringBuilder time = new StringBuilder();
+            time.Append(string.Format("{0:00}", hours));
+            time.Append(":");
+            time.Append(string.Format("{0:00}", minutes));
+            time.Append(":");
+            time.Append(string.Format("{0:00}", seconds));
+            clockTimeLabel.text = time.ToString();                
         }
 
         //====================================
@@ -75,9 +131,10 @@ namespace ExampleClock.Scripts.Widgets
         //======Events
         //====================================
 
-        private void OnServerSelect()
+        public void OnServerSelect()
         {
             LoadClockServer();
+            LoadClockTime();
         }
 
     }
